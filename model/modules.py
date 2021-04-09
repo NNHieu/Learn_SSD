@@ -245,6 +245,7 @@ class BoxEncoder(nn.Module):
 
         return positive_map, positive_set  # [num_prior, 1]
 
+    # from https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Object-Detection?fbclid=IwAR0D1hBpFYgMZwwlrIwyRxt3aDbCm9kRk3HnCF1AB719IpjBk8bzBjkMqow
     def detect_objects(self, predicted_locs, predicted_scores, min_score, max_overlap, top_k):
         """
         Decipher the 8732 locations and class scores (output of ths SSD300) to detect objects.
@@ -350,9 +351,6 @@ class BoxEncoder(nn.Module):
         return all_images_boxes, all_images_labels, all_images_scores  # lists of length batch_size
 
     def cxcy_to_gcxgcy(self, cxcy):
-        # The 10 and 5 below are referred to as 'variances' in the original Caffe repo, completely empirical
-        # They are for some sort of numerical conditioning, for 'scaling the localization gradient'
-        # See https://github.com/weiliu89/caffe/issues/155
         return torch.cat([(cxcy[:, :2] - self.cxcywh_dboxes[:, :2]) / (self.cxcywh_dboxes[:, 2:] / 10),  # g_c_x, g_c_y
                         torch.log(cxcy[:, 2:] / self.cxcywh_dboxes[:, 2:]) * 5], 1)  # g_w, g_h
     
@@ -399,19 +397,16 @@ class SSDLoss(nn.Module):
         conf_loss_all = self.crossent(b_pred_prior_classes.view(-1, nclasses), true_classes.view(-1))
         conf_loss_all = conf_loss_all.view(batch_size, -1)  # (N, 8732)
         
-        # We already know which priors are positive
+
         conf_loss_pos = conf_loss_all[positive_map]  # (sum(n_positives))
 
-        # Next, find which priors are hard-negative
-        # To do this, sort ONLY negative priors in each image in order of decreasing loss and take top n_hard_negatives
         conf_loss_neg = conf_loss_all.clone()  # (N, 8732)
-        conf_loss_neg[positive_map] = 0.  # (N, 8732), positive priors are ignored (never in top n_hard_negatives)
+        conf_loss_neg[positive_map] = 0.  # (N, 8732), positive priors are ignored
         conf_loss_neg, _ = conf_loss_neg.sort(dim=1, descending=True)  # (N, 8732), sorted by decreasing hardness
         hardness_ranks = torch.arange(0, self.bencoder.nboxes, step=1, dtype=torch.int, device=device).unsqueeze(0).expand_as(conf_loss_neg) # (N, 8732)
         hard_negatives = hardness_ranks < n_hard_negatives.unsqueeze(1)  # (N, 8732)
         conf_loss_hard_neg = conf_loss_neg[hard_negatives]  # (sum(n_hard_negatives))
 
-        # As in the paper, averaged over positive priors only, although computed over both positive and hard-negative priors
         conf_loss = (conf_loss_hard_neg.sum() + conf_loss_pos.sum()) / n_positives.sum().float()  # (), scalar
         
         return conf_loss, loc_loss
