@@ -1,0 +1,9 @@
+jupyterlab
+numpy
+pandas
+matplotlib
+ipywidgets
+pytorch-lightning
+opencv-python
+imgaug
+seaborn

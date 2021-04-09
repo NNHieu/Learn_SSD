@@ -1,0 +1,9 @@
+/datasets
+/data
+/ligntning_logs
+/model
+/original_sgd_logs
+/phase_training_logs
+/__pycache__
+/.ipynb_checkpoints
+/.vscode

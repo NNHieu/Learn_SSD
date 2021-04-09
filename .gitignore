@@ -1,0 +1,6 @@
+/.vscode/
+/datasets
+/*_logs
+*.ckpt
+.ipynb_checkpoints/
+__pycache__/
