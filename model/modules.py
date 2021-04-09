@@ -246,6 +246,7 @@ class BoxEncoder(nn.Module):
         return positive_map, positive_set  # [num_prior, 1]
 
     # from https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Object-Detection?fbclid=IwAR0D1hBpFYgMZwwlrIwyRxt3aDbCm9kRk3HnCF1AB719IpjBk8bzBjkMqow
+    # with slightly modify
     def detect_objects(self, predicted_locs, predicted_scores, min_score, max_overlap, top_k):
         """
         Decipher the 8732 locations and class scores (output of ths SSD300) to detect objects.
